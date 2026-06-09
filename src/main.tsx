@@ -9,7 +9,7 @@ import "./index.css";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
+      staleTime: 1000 * 60 * 5, // 5 minutos — datos de lectura no cambian frecuentemente
       refetchOnWindowFocus: false,
       retry: 1,
     },

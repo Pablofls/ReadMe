@@ -25,11 +25,20 @@ export function AddBookForm({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setError(null);
     if (!title.trim()) return setError("Ponle un título al libro.");
+    if (coverUrl.trim()) {
+      try {
+        new URL(coverUrl.trim());
+      } catch {
+        return setError("La URL de portada no es válida. Debe empezar con https://");
+      }
+    }
 
     let sp = 1;
     let ep = 1;
 
     if (needsPages) {
+      if (!startPage.trim()) return setError("La página de inicio es requerida.");
+      if (!endPage.trim()) return setError("La página final es requerida.");
       sp = parseInt(startPage, 10);
       ep = parseInt(endPage, 10);
       if (!Number.isInteger(sp) || sp < 1)

@@ -39,6 +39,7 @@ export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (patch: Partial<Pick<Profile, "display_name" | "daily_goal_pages" | "timezone">>) => {
+      if (!user) throw new Error("No autenticado");
       const { data, error } = await supabase
         .from("profiles")
         .update(patch)

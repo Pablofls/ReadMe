@@ -49,7 +49,7 @@ create table if not exists public.reading_sessions (
   book_id uuid not null references public.books (id) on delete cascade,
   session_date date not null default current_date,
   end_page integer not null,          -- página en la que se quedó
-  pages_read integer not null,        -- calculado en el cliente al guardar
+  pages_read integer not null check (pages_read >= 0),  -- calculado en el cliente al guardar
   reflection jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -110,3 +110,13 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- =============================================================
+-- MIGRACIONES INCREMENTALES (correr en SQL Editor si ya tienes datos)
+-- =============================================================
+
+-- v2: protege pages_read contra negativos
+alter table public.reading_sessions
+  drop constraint if exists reading_sessions_pages_read_check;
+alter table public.reading_sessions
+  add constraint reading_sessions_pages_read_check check (pages_read >= 0);

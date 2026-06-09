@@ -52,6 +52,7 @@ export function useAddSession() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (session: NewSession): Promise<ReadingSession> => {
+      if (!user) throw new Error("No autenticado");
       const { data, error } = await supabase
         .from("reading_sessions")
         .insert({ ...session, user_id: user!.id })

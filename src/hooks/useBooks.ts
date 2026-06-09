@@ -55,9 +55,10 @@ export function useAddBook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (book: NewBook): Promise<Book> => {
+      if (!user) throw new Error("No autenticado");
       const payload = {
         ...book,
-        user_id: user!.id,
+        user_id: user.id,
         started_at: book.status === "reading" ? new Date().toISOString() : null,
       };
       const { data, error } = await supabase
@@ -83,6 +84,7 @@ export function useUpdateBook() {
       id: string;
       patch: Partial<Book>;
     }): Promise<Book> => {
+      if (!user) throw new Error("No autenticado");
       const { data, error } = await supabase
         .from("books")
         .update(patch)
@@ -101,6 +103,7 @@ export function useDeleteBook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!user) throw new Error("No autenticado");
       const { error } = await supabase.from("books").delete().eq("id", id);
       if (error) throw error;
     },

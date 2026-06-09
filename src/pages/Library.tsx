@@ -5,7 +5,7 @@ import { useAllSessions } from "../hooks/useSessions";
 import { BookCard } from "../components/BookCard";
 import { AddBookForm } from "../components/AddBookForm";
 import { Spinner } from "../components/ui/Spinner";
-import { progressPercent } from "../lib/pages";
+import { progressPercent, lastPageByBook } from "../lib/pages";
 import type { BookStatus } from "../lib/types";
 
 const TABS: { value: BookStatus; label: string }[] = [
@@ -15,15 +15,12 @@ const TABS: { value: BookStatus; label: string }[] = [
 ];
 
 export default function Library() {
-  const { data: books, isLoading } = useBooks();
+  const { data: books, isLoading, isError } = useBooks();
   const { data: sessions } = useAllSessions();
   const [tab, setTab] = useState<BookStatus>("reading");
   const [adding, setAdding] = useState(false);
 
-  const lastPageByBook = new Map<string, number>();
-  for (const s of sessions ?? []) {
-    if (!lastPageByBook.has(s.book_id)) lastPageByBook.set(s.book_id, s.end_page);
-  }
+  const pagesByBook = lastPageByBook(sessions ?? []);
 
   const filtered = (books ?? []).filter((b) => b.status === tab);
 
@@ -61,6 +58,10 @@ export default function Library() {
 
       {isLoading ? (
         <Spinner />
+      ) : isError ? (
+        <p className="card p-5 text-center font-bold text-red-500">
+          Error al cargar la biblioteca. Revisa tu conexión e intenta de nuevo.
+        </p>
       ) : filtered.length === 0 ? (
         <EmptyShelf onAdd={() => setAdding(true)} />
       ) : (
@@ -71,7 +72,7 @@ export default function Library() {
               book={book}
               progress={progressPercent(
                 book,
-                lastPageByBook.get(book.id) ?? book.start_page - 1
+                pagesByBook.get(book.id) ?? book.start_page - 1
               )}
             />
           ))}

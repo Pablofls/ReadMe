@@ -19,8 +19,8 @@ import { randomQuestion } from "../lib/reflectionQuestions";
 export default function LogReading() {
   const { bookId } = useParams();
   const navigate = useNavigate();
-  const { data: books, isLoading: lb } = useBooks();
-  const { data: sessions, isLoading: ls } = useAllSessions();
+  const { data: books, isLoading: lb, isError: booksError } = useBooks();
+  const { data: sessions, isLoading: ls, isError: sessionsError } = useAllSessions();
   const { data: profile } = useProfile();
   const addSession = useAddSession();
 
@@ -46,6 +46,12 @@ export default function LogReading() {
   }, [book, sessions]);
 
   if (lb || ls) return <Spinner label="Cargando…" />;
+  if (booksError || sessionsError)
+    return (
+      <p className="card mt-8 p-5 text-center font-bold text-red-500">
+        Error al cargar los datos. Revisa tu conexión e intenta de nuevo.
+      </p>
+    );
 
   // Estado: libro terminado tras guardar.
   if (savedReachedEnd && book) {

@@ -6,24 +6,26 @@ import { useBooks } from "../hooks/useBooks";
 import { useAllSessions } from "../hooks/useSessions";
 import { ProgressRing } from "../components/ui/ProgressRing";
 import { Spinner } from "../components/ui/Spinner";
-import { progressPercent } from "../lib/pages";
+import { progressPercent, lastPageByBook } from "../lib/pages";
 import type { Book } from "../lib/types";
 
 export default function Today() {
   const streak = useStreak();
   const { data: profile } = useProfile();
-  const { data: books, isLoading: lb } = useBooks();
+  const { data: books, isLoading: lb, isError: booksError } = useBooks();
   const { data: sessions } = useAllSessions();
 
   if (streak.loading || lb) return <Spinner label="Cargando tu día…" />;
+  if (booksError)
+    return (
+      <p className="card mt-8 p-5 text-center font-bold text-red-500">
+        Error al cargar tus datos. Revisa tu conexión e intenta de nuevo.
+      </p>
+    );
 
   const reading = (books ?? []).filter((b) => b.status === "reading");
 
-  // Última página marcada por libro.
-  const lastPageByBook = new Map<string, number>();
-  for (const s of sessions ?? []) {
-    if (!lastPageByBook.has(s.book_id)) lastPageByBook.set(s.book_id, s.end_page);
-  }
+  const pagesByBook = lastPageByBook(sessions ?? []);
 
   const name = profile?.display_name?.split(" ")[0];
   const goalFraction = Math.min(1, streak.pagesToday / streak.dailyGoal);
@@ -92,7 +94,7 @@ export default function Today() {
                 book={book}
                 progress={progressPercent(
                   book,
-                  lastPageByBook.get(book.id) ?? book.start_page - 1
+                  pagesByBook.get(book.id) ?? book.start_page - 1
                 )}
               />
             ))}

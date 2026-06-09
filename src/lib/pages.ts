@@ -1,4 +1,4 @@
-import type { Book } from "./types";
+import type { Book, ReadingSession } from "./types";
 
 /**
  * Matemática de páginas.
@@ -70,6 +70,18 @@ export function isAtEnd(
   endPage: number
 ): boolean {
   return endPage >= book.end_page;
+}
+
+/**
+ * Devuelve un Map de book_id → última página registrada.
+ * Asume que `sessions` ya viene ordenado de más reciente a más antiguo.
+ */
+export function lastPageByBook(sessions: ReadingSession[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const s of sessions) {
+    if (!map.has(s.book_id)) map.set(s.book_id, s.end_page);
+  }
+  return map;
 }
 
 /**

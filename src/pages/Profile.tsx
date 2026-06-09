@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Flame, BookCheck, Layers, LogOut, Target, Trophy } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useProfile, useUpdateProfile } from "../hooks/useProfile";
@@ -18,6 +18,9 @@ export default function Profile() {
   const [name, setName] = useState("");
   const [goal, setGoal] = useState(10);
   const [savedFlash, setSavedFlash] = useState(false);
+  const flashTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
 
   useEffect(() => {
     if (profile) {
@@ -37,7 +40,8 @@ export default function Profile() {
       {
         onSuccess: () => {
           setSavedFlash(true);
-          setTimeout(() => setSavedFlash(false), 1500);
+          clearTimeout(flashTimer.current);
+          flashTimer.current = setTimeout(() => setSavedFlash(false), 1500);
         },
       }
     );

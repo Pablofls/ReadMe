@@ -30,6 +30,7 @@ export default function BookDetail() {
   const deleteBook = useDeleteBook();
   const [finishing, setFinishing] = useState(false);
   const [startingRead, setStartingRead] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (params.get("finish") === "1") setFinishing(true);
@@ -63,9 +64,7 @@ export default function BookDetail() {
     });
 
   const handleDelete = () => {
-    if (confirm(`¿Eliminar "${book.title}"? Esto borra sus registros.`)) {
-      deleteBook.mutate(book.id, { onSuccess: () => navigate("/biblioteca") });
-    }
+    deleteBook.mutate(book.id, { onSuccess: () => navigate("/biblioteca") });
   };
 
   return (
@@ -209,7 +208,7 @@ export default function BookDetail() {
       </section>
 
       <button
-        onClick={handleDelete}
+        onClick={() => setConfirmDelete(true)}
         className="mx-auto mt-2 flex items-center gap-1.5 text-sm font-bold text-red-400"
       >
         <Trash2 className="h-4 w-4" /> Eliminar libro
@@ -223,6 +222,15 @@ export default function BookDetail() {
             startReading(sp, ep);
             setStartingRead(false);
           }}
+        />
+      )}
+
+      {confirmDelete && (
+        <DeleteModal
+          title={book.title}
+          deleting={deleteBook.isPending}
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={handleDelete}
         />
       )}
 
@@ -332,6 +340,8 @@ function StartReadingModal({
   const [error, setError] = useState<string | null>(null);
 
   const handleSave = () => {
+    if (!startPage.trim()) return setError("La página de inicio es requerida.");
+    if (!endPage.trim()) return setError("La página final es requerida.");
     const sp = parseInt(startPage, 10);
     const ep = parseInt(endPage, 10);
     if (!Number.isInteger(sp) || sp < 1)
@@ -394,6 +404,42 @@ function StartReadingModal({
             className="btn-sky flex-1"
           >
             {saving ? "Guardando…" : "Empezar a leer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeleteModal({
+  title,
+  deleting,
+  onClose,
+  onConfirm,
+}: {
+  title: string;
+  deleting: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
+      <div className="w-full max-w-md rounded-t-3xl bg-white p-6 sm:rounded-3xl">
+        <h2 className="mb-1 text-xl font-black text-ink">¿Eliminar libro?</h2>
+        <p className="mb-6 font-medium text-gray-500">
+          Se borrará <span className="font-bold text-ink">"{title}"</span> junto
+          con todo su historial de lectura. Esta acción no se puede deshacer.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="btn-ghost flex-1">
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting}
+            className="btn flex-1 bg-red-500 text-white shadow-press hover:bg-red-600"
+          >
+            {deleting ? "Eliminando…" : "Sí, eliminar"}
           </button>
         </div>
       </div>
