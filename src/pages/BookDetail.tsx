@@ -29,6 +29,7 @@ export default function BookDetail() {
   const updateBook = useUpdateBook();
   const deleteBook = useDeleteBook();
   const [finishing, setFinishing] = useState(false);
+  const [startingRead, setStartingRead] = useState(false);
 
   useEffect(() => {
     if (params.get("finish") === "1") setFinishing(true);
@@ -50,10 +51,15 @@ export default function BookDetail() {
   const pos = currentPage(book, lastEnd);
   const pct = progressPercent(book, pos);
 
-  const startReading = () =>
+  const startReading = (startPage: number, endPage: number) =>
     updateBook.mutate({
       id: book.id,
-      patch: { status: "reading", started_at: new Date().toISOString() },
+      patch: {
+        status: "reading",
+        started_at: new Date().toISOString(),
+        start_page: startPage,
+        end_page: endPage,
+      },
     });
 
   const handleDelete = () => {
@@ -93,9 +99,11 @@ export default function BookDetail() {
           {book.author && (
             <p className="font-medium text-gray-400">{book.author}</p>
           )}
-          <p className="mt-1 text-sm font-medium text-gray-400">
-            Páginas {book.start_page}–{book.end_page}
-          </p>
+          {book.status !== "want_to_read" || book.end_page > 1 ? (
+            <p className="mt-1 text-sm font-medium text-gray-400">
+              Páginas {book.start_page}–{book.end_page}
+            </p>
+          ) : null}
           {book.status === "finished" && book.rating != null && (
             <div className="mt-auto flex items-center gap-0.5">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -133,7 +141,7 @@ export default function BookDetail() {
       )}
 
       {book.status === "want_to_read" && (
-        <button onClick={startReading} className="btn-sky w-full">
+        <button onClick={() => setStartingRead(true)} className="btn-sky w-full">
           <Play className="h-5 w-5" /> Empezar a leer
         </button>
       )}
@@ -206,6 +214,17 @@ export default function BookDetail() {
       >
         <Trash2 className="h-4 w-4" /> Eliminar libro
       </button>
+
+      {startingRead && (
+        <StartReadingModal
+          saving={updateBook.isPending}
+          onClose={() => setStartingRead(false)}
+          onSave={(sp, ep) => {
+            startReading(sp, ep);
+            setStartingRead(false);
+          }}
+        />
+      )}
 
       {finishing && (
         <FinishModal
@@ -292,6 +311,89 @@ function FinishModal({
             className="btn-grass flex-1"
           >
             {saving ? "Guardando…" : "Terminar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StartReadingModal({
+  saving,
+  onClose,
+  onSave,
+}: {
+  saving: boolean;
+  onClose: () => void;
+  onSave: (startPage: number, endPage: number) => void;
+}) {
+  const [startPage, setStartPage] = useState("1");
+  const [endPage, setEndPage] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = () => {
+    const sp = parseInt(startPage, 10);
+    const ep = parseInt(endPage, 10);
+    if (!Number.isInteger(sp) || sp < 1)
+      return setError("La página de inicio debe ser 1 o mayor.");
+    if (!Number.isInteger(ep) || ep < sp)
+      return setError("La página final debe ser mayor o igual a la de inicio.");
+    onSave(sp, ep);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
+      <div className="w-full max-w-md rounded-t-3xl bg-white p-6 sm:rounded-3xl">
+        <h2 className="mb-1 text-xl font-black text-ink">¿En qué páginas está?</h2>
+        <p className="mb-4 text-sm font-medium text-gray-400">
+          Indica dónde empieza y termina el contenido real del libro (ignora
+          páginas en blanco e índices al principio y al final).
+        </p>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-extrabold text-gray-600">
+              Página de inicio
+            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={startPage}
+              onChange={(e) => setStartPage(e.target.value)}
+              placeholder="1"
+              className="input"
+              autoFocus
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-extrabold text-gray-600">
+              Página final
+            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={endPage}
+              onChange={(e) => setEndPage(e.target.value)}
+              placeholder="ej. 304"
+              className="input"
+            />
+          </label>
+        </div>
+
+        {error && (
+          <p className="mt-2 text-sm font-bold text-red-500">{error}</p>
+        )}
+
+        <div className="mt-4 flex gap-3">
+          <button onClick={onClose} className="btn-ghost flex-1">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="btn-sky flex-1"
+          >
+            {saving ? "Guardando…" : "Empezar a leer"}
           </button>
         </div>
       </div>

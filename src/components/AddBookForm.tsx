@@ -16,19 +16,27 @@ export function AddBookForm({ onClose }: { onClose: () => void }) {
   const [coverUrl, setCoverUrl] = useState("");
   const [startPage, setStartPage] = useState("1");
   const [endPage, setEndPage] = useState("");
-  const [status, setStatus] = useState<BookStatus>("reading");
+  const [status, setStatus] = useState<BookStatus>("want_to_read");
   const [error, setError] = useState<string | null>(null);
+
+  const needsPages = status === "reading" || status === "finished";
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    const sp = parseInt(startPage, 10);
-    const ep = parseInt(endPage, 10);
     if (!title.trim()) return setError("Ponle un título al libro.");
-    if (!Number.isInteger(sp) || sp < 1)
-      return setError("La página de inicio debe ser 1 o mayor.");
-    if (!Number.isInteger(ep) || ep < sp)
-      return setError("La página final debe ser mayor o igual a la de inicio.");
+
+    let sp = 1;
+    let ep = 1;
+
+    if (needsPages) {
+      sp = parseInt(startPage, 10);
+      ep = parseInt(endPage, 10);
+      if (!Number.isInteger(sp) || sp < 1)
+        return setError("La página de inicio debe ser 1 o mayor.");
+      if (!Number.isInteger(ep) || ep < sp)
+        return setError("La página final debe ser mayor o igual a la de inicio.");
+    }
 
     try {
       await addBook.mutateAsync({
@@ -88,33 +96,6 @@ export function AddBookForm({ onClose }: { onClose: () => void }) {
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Página de inicio">
-              <input
-                className="input"
-                type="number"
-                inputMode="numeric"
-                value={startPage}
-                onChange={(e) => setStartPage(e.target.value)}
-                placeholder="1"
-              />
-            </Field>
-            <Field label="Página final">
-              <input
-                className="input"
-                type="number"
-                inputMode="numeric"
-                value={endPage}
-                onChange={(e) => setEndPage(e.target.value)}
-                placeholder="ej. 304"
-              />
-            </Field>
-          </div>
-          <p className="-mt-1 text-xs font-medium text-gray-400">
-            Usa las páginas donde realmente empieza y termina el contenido (no las
-            hojas en blanco ni los índices).
-          </p>
-
           <Field label="Estado">
             <div className="grid grid-cols-3 gap-2">
               {STATUS_OPTIONS.map((opt) => (
@@ -133,6 +114,37 @@ export function AddBookForm({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </Field>
+
+          {/* Páginas: solo cuando está leyendo o terminado */}
+          {needsPages && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Página de inicio">
+                  <input
+                    className="input"
+                    type="number"
+                    inputMode="numeric"
+                    value={startPage}
+                    onChange={(e) => setStartPage(e.target.value)}
+                    placeholder="1"
+                  />
+                </Field>
+                <Field label="Página final">
+                  <input
+                    className="input"
+                    type="number"
+                    inputMode="numeric"
+                    value={endPage}
+                    onChange={(e) => setEndPage(e.target.value)}
+                    placeholder="ej. 304"
+                  />
+                </Field>
+              </div>
+              <p className="-mt-1 text-xs font-medium text-gray-400">
+                Usa las páginas donde realmente empieza y termina el contenido.
+              </p>
+            </>
+          )}
 
           {error && <p className="text-sm font-bold text-red-500">{error}</p>}
 
